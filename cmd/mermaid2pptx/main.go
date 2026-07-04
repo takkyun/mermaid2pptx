@@ -6,18 +6,25 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime/debug"
 	"strings"
 
 	"mermaid2pptx/internal/convert"
 )
 
+// version is injected at release build time via
+// -ldflags "-X main.version=<tag>"; when empty it is derived from the build
+// info embedded by the go toolchain (see versionString).
+var version = ""
+
 // config holds the parsed CLI options.
 type config struct {
-	out    string
-	font   string
-	force  bool
-	margin float64
-	mmdc   string
+	out     string
+	font    string
+	force   bool
+	margin  float64
+	mmdc    string
+	version bool
 }
 
 func main() {
@@ -27,6 +34,10 @@ func main() {
 		fs.PrintDefaults()
 	}
 	cfg, inputs := parseArgs(fs, os.Args[1:])
+	if cfg.version {
+		fmt.Printf("mermaid2pptx %s\n", versionString())
+		return
+	}
 	if len(inputs) == 0 {
 		fs.Usage()
 		os.Exit(2)
@@ -57,7 +68,45 @@ func registerFlags(fs *flag.FlagSet) *config {
 	fs.BoolVar(&cfg.force, "f", false, "overwrite the output file if it exists")
 	fs.Float64Var(&cfg.margin, "margin", 0.3, "slide margin in inches")
 	fs.StringVar(&cfg.mmdc, "mmdc", "", "path to the mermaid-cli binary used for .mmd inputs (default: mmdc in PATH)")
+	fs.BoolVar(&cfg.version, "version", false, "print version information and exit")
 	return cfg
+}
+
+// versionString reports the release version injected at build time, or falls
+// back to the module version and VCS revision embedded by the go toolchain
+// (a bare `go build` yields "(devel)" plus the commit; `go install m@vX` the tag).
+func versionString() string {
+	if version != "" {
+		return version
+	}
+	bi, ok := debug.ReadBuildInfo()
+	if !ok {
+		return "unknown"
+	}
+	// A tag (go install m@vX) or a VCS-derived pseudo-version (recent go build)
+	// already carries the revision and dirty state, so print it as-is.
+	if v := bi.Main.Version; v != "" && v != "(devel)" {
+		return v
+	}
+	// Older toolchains report "(devel)": augment with the embedded VCS revision.
+	var rev, dirty string
+	for _, s := range bi.Settings {
+		switch s.Key {
+		case "vcs.revision":
+			rev = s.Value
+		case "vcs.modified":
+			if s.Value == "true" {
+				dirty = "-dirty"
+			}
+		}
+	}
+	if len(rev) > 12 {
+		rev = rev[:12]
+	}
+	if rev == "" {
+		return "(devel)"
+	}
+	return fmt.Sprintf("(devel) %s%s", rev, dirty)
 }
 
 // parseArgs parses fs but lets options appear before, after, or between input

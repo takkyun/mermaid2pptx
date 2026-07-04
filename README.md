@@ -56,6 +56,7 @@ GOOS=windows GOARCH=amd64 go build -o mermaid2pptx.exe ./cmd/mermaid2pptx
 ./mermaid2pptx -font "Meiryo" a.svg   # set the font (default: Noto Sans JP)
 ./mermaid2pptx -margin 0.5 a.svg      # slide margin in inches (default: 0.3)
 ./mermaid2pptx -mmdc /path/to/mmdc a.mmd  # point at a specific mermaid-cli
+./mermaid2pptx -version               # print version information and exit
 
 # Regenerate the samples
 ./mermaid2pptx -f sample/graph*.svg

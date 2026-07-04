@@ -55,6 +55,7 @@ GOOS=windows GOARCH=amd64 go build -o mermaid2pptx.exe ./cmd/mermaid2pptx
 ./mermaid2pptx -font "Meiryo" a.svg   # フォント指定(既定: Noto Sans JP)
 ./mermaid2pptx -margin 0.5 a.svg      # スライド余白(インチ、既定: 0.3)
 ./mermaid2pptx -mmdc /path/to/mmdc a.mmd  # mermaid-cli の場所を指定
+./mermaid2pptx -version               # バージョン情報を表示して終了
 
 # サンプルの再生成
 ./mermaid2pptx -f sample/graph*.svg
