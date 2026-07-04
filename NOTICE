@@ -1,0 +1,10 @@
+mermaid2pptx
+Copyright 2026 Takuya Otani
+
+Licensed under the Apache License, Version 2.0 (see the LICENSE file).
+
+This product is not affiliated with, endorsed by, or sponsored by the
+mermaid-js project or Microsoft Corporation. "Mermaid" and the Mermaid
+diagram syntax are the work of the mermaid-js project; "PowerPoint" and the
+Office Open XML (.pptx) format are trademarks of Microsoft Corporation. These
+names are used only to describe interoperability with those tools and formats.

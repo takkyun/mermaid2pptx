@@ -35,6 +35,12 @@ sample/           サンプル (.mmd / mermaid-cli で生成した .svg /
 - graph7 — classDiagram(インターフェース・実現・集約)
 - graph8 — erDiagram(エンティティ属性表・カーディナリティ)
 
+## インストール
+
+```sh
+go install github.com/takkyun/mermaid2pptx/cmd/mermaid2pptx@latest
+```
+
 ## ビルド
 
 ```sh
@@ -127,3 +133,13 @@ sequenceDiagram:
 - class / ER の区画テキストは箱と別オブジェクトのため、箱を動かすと
   テキストは追従しない(グループ化は今後の課題)。
 - sequence の loop / alt 枠は汎用変換(線+テキスト)で、専用対応はしていない。
+
+## ライセンス
+
+[Apache License, Version 2.0](LICENSE) の下で公開。[NOTICE](NOTICE) および
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) も参照
+(`sample/*.svg` には MIT ライセンスの Mermaid が生成したマークアップが埋め込まれている)。
+
+「Mermaid」は mermaid-js プロジェクト、「PowerPoint」/ `.pptx` は Microsoft に
+帰属する。本プロジェクトはいずれとも無関係で、これらのツール・形式との
+相互運用のみを目的とする。
