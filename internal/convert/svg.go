@@ -575,7 +575,10 @@ func arrowType(markerURL string) string {
 }
 
 func parseEdge(p *xnode, dx, dy float64) (Edge, bool) {
-	e := Edge{ID: p.get("id")}
+	// Prefer data-id: it is the bare edge id (e.g. "L_A_B_0") without the
+	// svg-root prefix, so splitEdgeID can't be thrown off by an "L_"/"id_"
+	// substring that happens to appear in the root id.
+	e := Edge{ID: orDefault(p.get("data-id"), p.get("id"))}
 	cls := " " + p.get("class") + " "
 	e.Dashed = strings.Contains(cls, "edge-pattern-dashed") || strings.Contains(cls, "edge-pattern-dotted")
 	e.Thick = strings.Contains(cls, "edge-thickness-thick")

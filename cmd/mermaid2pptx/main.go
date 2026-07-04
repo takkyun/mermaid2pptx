@@ -25,12 +25,10 @@ func main() {
 	flag.Float64Var(&margin, "margin", 0.3, "slide margin in inches")
 	flag.StringVar(&mmdc, "mmdc", "", "path to the mermaid-cli binary used for .mmd inputs (default: mmdc in PATH)")
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s [options] input.{svg|mmd} [input2 ...]\n\nConverts mermaid diagrams (SVG, or .mmd via mermaid-cli) into editable PowerPoint slides.\n\nOptions:\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s [options] input.{svg|mmd} [input2 ...]\n\nConverts mermaid diagrams (SVG, or .mmd via mermaid-cli) into editable PowerPoint slides.\nOptions may appear before, after, or between input files.\n\nOptions:\n", os.Args[0])
 		flag.PrintDefaults()
 	}
-	flag.Parse()
-
-	inputs := flag.Args()
+	inputs := parseArgs(os.Args[1:])
 	if len(inputs) == 0 {
 		flag.Usage()
 		os.Exit(2)
@@ -50,6 +48,22 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Printf("%s -> %s\n", in, dst)
+	}
+}
+
+// parseArgs parses the standard flag set but allows flags to be interspersed
+// with input files (Go's flag package stops at the first non-flag argument).
+// It repeatedly parses, consuming one leading positional at a time.
+func parseArgs(args []string) []string {
+	var inputs []string
+	for {
+		flag.CommandLine.Parse(args)
+		rest := flag.Args()
+		if len(rest) == 0 {
+			return inputs
+		}
+		inputs = append(inputs, rest[0])
+		args = rest[1:]
 	}
 }
 

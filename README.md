@@ -61,6 +61,9 @@ GOOS=windows GOARCH=amd64 go build -o mermaid2pptx.exe ./cmd/mermaid2pptx
 ./mermaid2pptx -f sample/graph*.svg
 ```
 
+Options may appear before, after, or between the input files
+(`./mermaid2pptx a.svg -o out.pptx -f` works too).
+
 `.mmd` input requires [mermaid-cli](https://github.com/mermaid-js/mermaid-cli)
 (`npm install -g @mermaid-js/mermaid-cli`). SVG input has no external
 dependencies.

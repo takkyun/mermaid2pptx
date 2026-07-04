@@ -7,6 +7,7 @@ import (
 	"io"
 	"math"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -465,4 +466,111 @@ func TestGeneratePackage(t *testing.T) {
 			t.Errorf("%s: negative shape offset emitted", name)
 		}
 	}
+}
+
+// endpointTolEMU is the allowed error when reconstructing a connector's
+// world-space endpoints. Measured worst case across all samples is < 1 EMU
+// (float rounding via math.Round); a real geometry regression — a wrong
+// attach side or flip — misplaces an endpoint by thousands of EMU, so this
+// bound is tight enough to catch one yet immune to rounding noise.
+const endpointTolEMU = 2.0
+
+// TestConnectorEndpointsMatchSVG is the regression guard for connector
+// geometry: every edge connector's reconstructed endpoints (undoing the
+// xfrm flip/rotation) must land on some edge's SVG data-points, transformed
+// through the same px->EMU fit. Re-run this whenever geom.go / slide.go
+// placement math changes.
+func TestConnectorEndpointsMatchSVG(t *testing.T) {
+	for _, f := range []string{"1", "2", "3", "4", "5", "7", "8"} {
+		name := "../../sample/graph" + f + ".svg"
+		d := mustParseFile(t, name)
+		scale, offX, offY := fitTransform(d, 0.3)
+		emu := func(p Pt) (float64, float64) {
+			return p.X*emuPerPx*scale + offX, p.Y*emuPerPx*scale + offY
+		}
+		// expected endpoint pairs (start, end) in EMU, one per edge
+		type pair struct{ sx, sy, ex, ey float64 }
+		var want []pair
+		for _, e := range d.Edges {
+			sx, sy := emu(e.Points[0])
+			ex, ey := emu(e.Points[len(e.Points)-1])
+			want = append(want, pair{sx, sy, ex, ey})
+		}
+
+		root, err := parseXMLTree(strings.NewReader(GenerateSlideXML(d, Options{Font: "X", MarginIn: 0.3})))
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		checked := 0
+		root.walk(func(nd *xnode) {
+			if nd.tag != "cxnSp" {
+				return
+			}
+			var name string
+			var xfrm *xnode
+			nd.walk(func(k *xnode) {
+				if k.tag == "cNvPr" && name == "" {
+					name = k.get("name")
+				}
+				if k.tag == "xfrm" && xfrm == nil {
+					xfrm = k
+				}
+			})
+			if !strings.HasPrefix(name, "edge ") || xfrm == nil {
+				return // "line" connectors (lifelines, dividers) aren't data-points based
+			}
+			sx, sy, ex, ey := reconstructConnector(xfrm)
+			best := math.Inf(1)
+			for _, w := range want {
+				d1 := max4(math.Abs(sx-w.sx), math.Abs(sy-w.sy), math.Abs(ex-w.ex), math.Abs(ey-w.ey))
+				if d1 < best {
+					best = d1
+				}
+			}
+			if best > endpointTolEMU {
+				t.Errorf("%s: connector %q endpoints off by %.1f EMU (tol %.0f)", name, name, best, endpointTolEMU)
+			}
+			checked++
+		})
+		if checked == 0 {
+			t.Errorf("%s: no edge connectors to verify", name)
+		}
+	}
+}
+
+// reconstructConnector recovers the world-space start (local 0,0) and end
+// (local cx,cy) of a preset connector from its xfrm, undoing flipH/flipV and
+// the clockwise rotation about the box center.
+func reconstructConnector(xfrm *xnode) (sx, sy, ex, ey float64) {
+	atof := func(s string) float64 { v, _ := strconv.ParseFloat(s, 64); return v }
+	var ox, oy, cx, cy float64
+	for _, k := range xfrm.kids {
+		switch k.tag {
+		case "off":
+			ox, oy = atof(k.get("x")), atof(k.get("y"))
+		case "ext":
+			cx, cy = atof(k.get("cx")), atof(k.get("cy"))
+		}
+	}
+	rot := atof(xfrm.get("rot")) / 60000 * math.Pi / 180
+	fh, fv := xfrm.get("flipH") == "1", xfrm.get("flipV") == "1"
+	world := func(px, py float64) (float64, float64) {
+		if fh {
+			px = cx - px
+		}
+		if fv {
+			py = cy - py
+		}
+		mx, my := cx/2, cy/2
+		dx, dy := px-mx, py-my
+		return ox + mx + dx*math.Cos(rot) - dy*math.Sin(rot),
+			oy + my + dx*math.Sin(rot) + dy*math.Cos(rot)
+	}
+	sx, sy = world(0, 0)
+	ex, ey = world(cx, cy)
+	return
+}
+
+func max4(a, b, c, d float64) float64 {
+	return math.Max(math.Max(a, b), math.Max(c, d))
 }

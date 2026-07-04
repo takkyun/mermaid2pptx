@@ -38,9 +38,12 @@ with `python-pptx` (available in the environment):
 python3 -c "from pptx import Presentation; p=Presentation('sample/graph1.pptx'); print(len(p.slides[0].shapes))"
 ```
 
-The strongest check we use is comparing connector endpoints against the SVG
-`data-points` (transformed into EMU): the error should stay ~0 (≤1 EMU). If you
-touch geometry, reproduce that comparison.
+The strongest check we have is `TestConnectorEndpointsMatchSVG`, which
+reconstructs every edge connector's endpoints from the generated XML (undoing
+the flip/rotation) and asserts they match the SVG `data-points` transformed
+through the same px->EMU fit, within ~1 EMU. `fitTransform` in `slide.go` is
+the single source of truth for that transform, shared by the generator and the
+test. If you touch geometry, this test is the guard — keep it green.
 
 ## Architecture
 

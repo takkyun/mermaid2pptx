@@ -60,6 +60,9 @@ GOOS=windows GOARCH=amd64 go build -o mermaid2pptx.exe ./cmd/mermaid2pptx
 ./mermaid2pptx -f sample/graph*.svg
 ```
 
+オプションは入力ファイルの前後・間のどこに置いてもよい
+(`./mermaid2pptx a.svg -o out.pptx -f` も動作する)。
+
 `.mmd` 入力には [mermaid-cli](https://github.com/mermaid-js/mermaid-cli)
 (`npm install -g @mermaid-js/mermaid-cli`)が必要。SVG 入力は外部依存なしで
 動作する。

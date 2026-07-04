@@ -62,19 +62,29 @@ func xmlEsc(s string) string {
 	return b.String()
 }
 
-// GenerateSlideXML renders the diagram to a slide1.xml document.
-func GenerateSlideXML(d *Diagram, opt Options) string {
-	margin := int64(opt.MarginIn * 914400)
+// fitTransform computes the px->EMU affine transform that fits the diagram
+// into the slide margins with aspect ratio preserved. It is the single source
+// of truth for the placement math (shared with tests).
+func fitTransform(d *Diagram, marginIn float64) (scale, offX, offY float64) {
+	margin := int64(marginIn * 914400)
 	availW := float64(slideCx - 2*margin)
 	availH := float64(slideCy - 2*margin)
-	scale := math.Min(availW/(d.W*emuPerPx), availH/(d.H*emuPerPx))
+	scale = math.Min(availW/(d.W*emuPerPx), availH/(d.H*emuPerPx))
 	// don't blow up small diagrams (and their fonts) to fill the slide
 	scale = math.Min(scale, maxUpscale)
+	offX = float64(margin) + (availW-d.W*emuPerPx*scale)/2 - d.MinX*emuPerPx*scale
+	offY = float64(margin) + (availH-d.H*emuPerPx*scale)/2 - d.MinY*emuPerPx*scale
+	return
+}
+
+// GenerateSlideXML renders the diagram to a slide1.xml document.
+func GenerateSlideXML(d *Diagram, opt Options) string {
+	scale, offX, offY := fitTransform(d, opt.MarginIn)
 	clFill, clStroke := d.clusterDefaults()
 	g := &slideGen{
 		scale:    scale,
-		offX:     float64(margin) + (availW-d.W*emuPerPx*scale)/2 - d.MinX*emuPerPx*scale,
-		offY:     float64(margin) + (availH-d.H*emuPerPx*scale)/2 - d.MinY*emuPerPx*scale,
+		offX:     offX,
+		offY:     offY,
 		font:     opt.Font,
 		sz:       maxInt(100, int(math.Round(basePt100*scale/50)*50)),
 		nextID:   2,
