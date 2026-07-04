@@ -2,6 +2,9 @@
 /mermaid2pptx
 /mermaid2pptx.exe
 
+# Release build output (produced locally by the release build steps)
+/dist/
+
 # Internal / non-public material (kept out of version control on purpose)
 /_sandbox/
 

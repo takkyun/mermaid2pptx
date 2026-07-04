@@ -1,0 +1,53 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write  # required to create/upload release assets
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build and package
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          for target in darwin/amd64 darwin/arm64 linux/amd64 linux/arm64 windows/amd64; do
+            os="${target%/*}"; arch="${target#*/}"
+            base="mermaid2pptx_${VERSION}_${os}_${arch}"
+            bin="mermaid2pptx"
+            [ "$os" = windows ] && bin="mermaid2pptx.exe"
+            CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" \
+              go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" \
+              -o "dist/${bin}" ./cmd/mermaid2pptx
+            if [ "$os" = windows ]; then
+              (cd dist && zip -q "${base}.zip" "${bin}" && rm "${bin}")
+            else
+              (cd dist && tar -czf "${base}.tar.gz" "${bin}" && rm "${bin}")
+            fi
+          done
+          (cd dist && sha256sum * > SHA256SUMS.txt)
+          ls -l dist
+
+      - name: Upload to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          # Create the release if a tag was pushed without one; otherwise reuse it.
+          gh release view "$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
+            || gh release create "$VERSION" --repo "$GITHUB_REPOSITORY" --title "$VERSION" --generate-notes
+          gh release upload "$VERSION" dist/* --repo "$GITHUB_REPOSITORY" --clobber
