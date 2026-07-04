@@ -134,6 +134,11 @@ sequenceDiagram:
   テキストは追従しない(グループ化は今後の課題)。
 - sequence の loop / alt 枠は汎用変換(線+テキスト)で、専用対応はしていない。
 
+## 貢献
+
+Issue・Pull Request を歓迎します。開発フローと CI で実行されるチェックは
+[CONTRIBUTING.ja.md](CONTRIBUTING.ja.md) を参照してください。
+
 ## ライセンス
 
 [Apache License, Version 2.0](LICENSE) の下で公開。[NOTICE](NOTICE) および

@@ -142,6 +142,11 @@ sequenceDiagram:
 - Sequence loop / alt frames go through the generic conversion (lines + text);
   there is no dedicated handling for them.
 
+## Contributing
+
+Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for
+the development workflow and the checks CI runs.
+
 ## License
 
 Licensed under the [Apache License, Version 2.0](LICENSE). See also [NOTICE](NOTICE)
