@@ -1,0 +1,18 @@
+sequenceDiagram
+  participant B as ブラウザ
+  participant A as 認証サーバ
+  participant R as リソース API
+
+  B->>A: ログイン要求
+  activate A
+  A-->>B: アクセストークン
+  deactivate A
+
+  B->>R: データ取得 (Bearer トークン)
+  activate R
+  R->>A: トークン検証
+  A-->>R: 検証 OK
+  R-->>B: レスポンス JSON
+  deactivate R
+
+  Note over B,R: トークン失効時は 401 を返し再ログインへ

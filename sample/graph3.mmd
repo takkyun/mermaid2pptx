@@ -1,0 +1,25 @@
+flowchart TD
+  REQ["申込リクエスト"]:::input --> CHECK{"審査<br/>スコアリング"}:::gate
+  CHECK -->|承認| ISSUE["契約発行"]:::ok
+  CHECK -->|保留| MANUAL["人手レビュー"]:::warn
+  CHECK -->|否決| REJECT["否決通知"]:::err
+  MANUAL -->|再審査| CHECK
+  MANUAL -->|承認| ISSUE
+
+  subgraph NOTIFY["通知基盤"]
+    MAIL["メール送信"]:::infra
+    LOG[("監査ログ")]:::infra
+  end
+
+  ISSUE --> MAIL
+  REJECT --> MAIL
+  ISSUE -.-> LOG
+  REJECT -.-> LOG
+  MANUAL -.-> LOG
+
+  classDef input fill:#E7EEFB,stroke:#5B7FD0,color:#1A1A1A
+  classDef gate fill:#FFF3CD,stroke:#E0A800,color:#5A4500
+  classDef ok fill:#E6F4EA,stroke:#4C9A2A,color:#1A4314
+  classDef warn fill:#FDEBD0,stroke:#E67E22,color:#6E2C00
+  classDef err fill:#F8D7DA,stroke:#D9534F,color:#7A1A1A
+  classDef infra fill:#EEEEEE,stroke:#888888,color:#333333

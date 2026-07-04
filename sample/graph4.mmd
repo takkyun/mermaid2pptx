@@ -1,0 +1,25 @@
+%%{init: {'flowchart': {'curve': 'basis', 'wrappingWidth': 250}}}%%
+flowchart TD
+  subgraph FRONT["フロントエンド"]
+    FORM["問い合わせフォーム 氏名やメールアドレスなど送信前に必ず検証する入力項目を含む"]:::input
+    DRAFT["下書き保存 ブラウザのローカルストレージに一時保存し再読み込み時に復元する"]
+    FORM --> DRAFT
+  end
+
+  GATE{"送信内容の検証 必須項目の欠落や形式不正を検出したら差し戻す"}:::gate
+
+  subgraph BACK["バックエンド"]
+    API["受付 API 正規化とレート制限を通過したリクエストのみ処理する"]
+    QUEUE[("処理キュー")]
+    WORKER["非同期ワーカー 添付ファイルの変換と通知メールの送信を行う"]
+    API --> QUEUE
+    QUEUE --> WORKER
+  end
+
+  FORM -->|送信| GATE
+  GATE -->|差し戻し| FORM
+  GATE -->|受理| API
+  WORKER -.->|完了通知| FORM
+
+  classDef input fill:#E7EEFB,stroke:#5B7FD0,color:#1A1A1A
+  classDef gate fill:#FFF3CD,stroke:#E0A800,color:#5A4500

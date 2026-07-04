@@ -1,0 +1,21 @@
+classDiagram
+  class Notifier {
+    <<interface>>
+    +send(msg string) error
+  }
+  class MailNotifier {
+    +host string
+    +send(msg string) error
+  }
+  class SlackNotifier {
+    +webhook string
+    +send(msg string) error
+  }
+  class Dispatcher {
+    -targets []Notifier
+    +dispatch(msg string)
+  }
+
+  Notifier <|.. MailNotifier
+  Notifier <|.. SlackNotifier
+  Dispatcher o-- Notifier

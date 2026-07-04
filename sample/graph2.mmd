@@ -1,0 +1,19 @@
+flowchart TD
+  CLIENT((クライアント)) -->|HTTPS| LB
+
+  subgraph OUTER["システム全体"]
+    subgraph WEB["Web 層"]
+      LB[ロードバランサ] --> APP1[アプリ #1]
+      LB --> APP2[アプリ #2]
+    end
+    subgraph DATA["データ層"]
+      PG[(PostgreSQL)]
+      REDIS[(Redis)]
+    end
+    APP1 -->|書き込み| PG
+    APP2 -->|書き込み| PG
+    APP1 -.->|キャッシュ| REDIS
+    APP2 -.->|キャッシュ| REDIS
+  end
+
+  PG -->|日次| BK[バックアップ<br/>ストレージ]

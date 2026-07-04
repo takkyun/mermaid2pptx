@@ -1,0 +1,16 @@
+flowchart LR
+  START([開始]) --> INPUT[/ユーザー入力/]
+  INPUT --> VALID{入力チェック}
+  VALID -->|OK| PROC[[正規化処理]]
+  VALID -->|NG| ERR((エラー))
+  ERR --> INPUT
+  PROC --> DB[(結果 DB)]
+  DB --> HEX{{後処理<br/>バッチ}}
+  HEX ==> DONE([完了])
+
+  classDef ok fill:#E6F4EA,stroke:#4C9A2A,color:#1A4314
+  classDef warn fill:#FFF3CD,stroke:#E0A800,color:#5A4500
+  classDef err fill:#F8D7DA,stroke:#D9534F,color:#7A1A1A
+  class PROC,DB,DONE ok
+  class VALID warn
+  class ERR err
