@@ -11,39 +11,37 @@ import (
 	"mermaid2pptx/internal/convert"
 )
 
+// config holds the parsed CLI options.
+type config struct {
+	out    string
+	font   string
+	force  bool
+	margin float64
+	mmdc   string
+}
+
 func main() {
-	var (
-		out    string
-		font   string
-		force  bool
-		margin float64
-		mmdc   string
-	)
-	flag.StringVar(&out, "o", "", "output .pptx path (only with a single input; default: <input>.pptx)")
-	flag.StringVar(&font, "font", "Noto Sans JP", "font family used for all text")
-	flag.BoolVar(&force, "f", false, "overwrite the output file if it exists")
-	flag.Float64Var(&margin, "margin", 0.3, "slide margin in inches")
-	flag.StringVar(&mmdc, "mmdc", "", "path to the mermaid-cli binary used for .mmd inputs (default: mmdc in PATH)")
-	flag.Usage = func() {
+	fs := flag.NewFlagSet("mermaid2pptx", flag.ExitOnError)
+	fs.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] input.{svg|mmd} [input2 ...]\n\nConverts mermaid diagrams (SVG, or .mmd via mermaid-cli) into editable PowerPoint slides.\nOptions may appear before, after, or between input files.\n\nOptions:\n", os.Args[0])
-		flag.PrintDefaults()
+		fs.PrintDefaults()
 	}
-	inputs := parseArgs(os.Args[1:])
+	cfg, inputs := parseArgs(fs, os.Args[1:])
 	if len(inputs) == 0 {
-		flag.Usage()
+		fs.Usage()
 		os.Exit(2)
 	}
-	if out != "" && len(inputs) > 1 {
+	if cfg.out != "" && len(inputs) > 1 {
 		fmt.Fprintln(os.Stderr, "error: -o cannot be used with multiple inputs")
 		os.Exit(2)
 	}
 
 	for _, in := range inputs {
-		dst := out
+		dst := cfg.out
 		if dst == "" {
 			dst = strings.TrimSuffix(in, filepath.Ext(in)) + ".pptx"
 		}
-		if err := convertFile(in, dst, font, margin, force, mmdc); err != nil {
+		if err := convertFile(in, dst, cfg.font, cfg.margin, cfg.force, cfg.mmdc); err != nil {
 			fmt.Fprintf(os.Stderr, "error: %s: %v\n", in, err)
 			os.Exit(1)
 		}
@@ -51,16 +49,31 @@ func main() {
 	}
 }
 
-// parseArgs parses the standard flag set but allows flags to be interspersed
-// with input files (Go's flag package stops at the first non-flag argument).
-// It repeatedly parses, consuming one leading positional at a time.
-func parseArgs(args []string) []string {
+// registerFlags binds the options onto fs and returns the destination config.
+func registerFlags(fs *flag.FlagSet) *config {
+	cfg := &config{}
+	fs.StringVar(&cfg.out, "o", "", "output .pptx path (only with a single input; default: <input>.pptx)")
+	fs.StringVar(&cfg.font, "font", "Noto Sans JP", "font family used for all text")
+	fs.BoolVar(&cfg.force, "f", false, "overwrite the output file if it exists")
+	fs.Float64Var(&cfg.margin, "margin", 0.3, "slide margin in inches")
+	fs.StringVar(&cfg.mmdc, "mmdc", "", "path to the mermaid-cli binary used for .mmd inputs (default: mmdc in PATH)")
+	return cfg
+}
+
+// parseArgs parses fs but lets options appear before, after, or between input
+// files (Go's flag stops at the first non-flag argument). It parses, sets
+// aside the leading positional, then re-parses the remainder until only
+// positionals remain. Each fs.Parse resets fs.args, so this is safe.
+func parseArgs(fs *flag.FlagSet, args []string) (*config, []string) {
+	cfg := registerFlags(fs)
 	var inputs []string
 	for {
-		flag.CommandLine.Parse(args)
-		rest := flag.Args()
+		if err := fs.Parse(args); err != nil {
+			return cfg, inputs // ContinueOnError sets returns here; ExitOnError exits
+		}
+		rest := fs.Args()
 		if len(rest) == 0 {
-			return inputs
+			return cfg, inputs
 		}
 		inputs = append(inputs, rest[0])
 		args = rest[1:]
